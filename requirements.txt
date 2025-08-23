@@ -1,0 +1,5 @@
+aiogram==3.4.1
+aiosqlite==0.20.0
+APScheduler==3.10.4
+python-dateutil==2.9.0.post0
+pytz==2024.1
