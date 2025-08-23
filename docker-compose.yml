@@ -1,4 +1,3 @@
-version: "3.8"
 services:
   subs_tasks_manager_bot:
     build: .
