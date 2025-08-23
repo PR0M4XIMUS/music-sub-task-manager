@@ -1,7 +1,8 @@
+version: "3.8"
 services:
-  subs_bot:
+  subs_tasks_manager_bot:
     build: .
-    container_name: subs_bot
+    container_name: subs_tasks_manager_bot
     env_file: .env
     volumes:
       - ./data:/app/data
