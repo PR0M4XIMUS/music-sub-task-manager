@@ -1,16 +1,8 @@
-version: "3.8"
-
 services:
-  subs_tasks_manager_bot:
+  subs_bot:
     build: .
-    container_name: subs_tasks_manager_bot
-    environment:
-      - BOT_TOKEN=${BOT_TOKEN}            # set in your .env or export before docker compose up
-      - ADMIN_ID=${ADMIN_ID}              # your Telegram numeric user ID
-      - MONTHLY_AMOUNT=2.50               # default cost per member per month (EUR/USD/etc)
-      - BILLING_DAY=1                     # 1..28 (avoid months with fewer days)
-      - TIMEZONE=Europe/Chisinau          # IANA tz name
-      - REMINDER_HOUR=10                  # 0..23, local time
+    container_name: subs_bot
+    env_file: .env
     volumes:
       - ./data:/app/data
     restart: unless-stopped
