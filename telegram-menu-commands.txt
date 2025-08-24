@@ -1,0 +1,28 @@
+# Telegram Bot Menu Commands Configuration
+# 
+# To add these commands to your bot, send the following to @BotFather:
+# 1. Start conversation with @BotFather
+# 2. Send: /mybots
+# 3. Select your bot
+# 4. Choose "Edit Bot"
+# 5. Choose "Edit Commands"
+# 6. Copy and paste the commands below:
+
+# User Commands (available to all users):
+start - 🏠 Main menu and registration
+pay - 💳 Start payment process
+history - 📊 View payment history
+help - ❓ Get help and available commands
+
+# Admin Commands (only visible to admin):
+status - 📊 View all users payment status
+setmute - 🔇 Mute user reminders for X months
+setamount - 💰 Set monthly payment amount
+setday - 📅 Set billing day (1-28)
+proof - 🔍 Get payment proof for a user
+addmember - 👤 Add/track a new member
+remove - 🗑️ Remove user and all their data
+export - 📥 Export all payments to CSV
+
+# Note: Admin commands are automatically filtered by the bot based on user ID
+# Regular users will only see the first 4 commands in their menu
