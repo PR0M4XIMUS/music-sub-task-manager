@@ -48,9 +48,9 @@ def create_main_menu() -> InlineKeyboardMarkup:
     """Create main menu keyboard for regular users"""
     buttons = [
         [InlineKeyboardButton(text="💳 Make Payment", callback_data="pay_menu")],
-        [InlineKeyboardButton(text="📊 Payment History", callback_data="history")],
-        [InlineKeyboardButton(text="❓ Help & Commands", callback_data="help")],
-        [InlineKeyboardButton(text="🔄 Refresh Status", callback_data="refresh_user_status")]
+        [InlineKeyboardButton(text="📊 Payment History", callback_data="history"),
+         InlineKeyboardButton(text="🔄 Check Status", callback_data="refresh_user_status")],
+        [InlineKeyboardButton(text="❓ Help & Commands", callback_data="help")]
     ]
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
@@ -82,12 +82,12 @@ def create_admin_comprehensive_menu() -> InlineKeyboardMarkup:
 def create_admin_menu() -> InlineKeyboardMarkup:
     """Create admin menu keyboard"""
     buttons = [
-        [InlineKeyboardButton(text="📊 User Status", callback_data="status")],
-        [InlineKeyboardButton(text="🔧 Settings", callback_data="admin_settings")],
-        [InlineKeyboardButton(text="👥 Manage Users", callback_data="user_management")],
-        [InlineKeyboardButton(text="📥 Export Data", callback_data="export")],
-        [InlineKeyboardButton(text="💾 Payment History", callback_data="admin_history")],
-        [InlineKeyboardButton(text="⚡ Quick Actions", callback_data="admin_quick_actions")],
+        [InlineKeyboardButton(text="📊 User Status", callback_data="status"),
+         InlineKeyboardButton(text="👥 Manage Users", callback_data="user_management")],
+        [InlineKeyboardButton(text="💾 Payment History", callback_data="admin_history"),
+         InlineKeyboardButton(text="⚡ Quick Actions", callback_data="admin_quick_actions")],
+        [InlineKeyboardButton(text="🔧 Settings", callback_data="admin_settings"),
+         InlineKeyboardButton(text="📥 Export Data", callback_data="export")],
         [InlineKeyboardButton(text="❌ Cancel", callback_data="main_menu")]
     ]
     return InlineKeyboardMarkup(inline_keyboard=buttons)
@@ -96,11 +96,11 @@ def create_payment_menu() -> InlineKeyboardMarkup:
     """Create quick payment options"""
     buttons = [
         [InlineKeyboardButton(text=f"💰 Pay {pretty_money(MONTHLY_AMOUNT)} (1 month)", callback_data=f"pay_{MONTHLY_AMOUNT}_1")],
-        [InlineKeyboardButton(text=f"💰 Pay {pretty_money(MONTHLY_AMOUNT * 3)} (3 months)", callback_data=f"pay_{MONTHLY_AMOUNT * 3}_3")],
-        [InlineKeyboardButton(text=f"💰 Pay {pretty_money(MONTHLY_AMOUNT * 6)} (6 months)", callback_data=f"pay_{MONTHLY_AMOUNT * 6}_6")],
+        [InlineKeyboardButton(text=f"💰 Pay {pretty_money(MONTHLY_AMOUNT * 3)} (3 months)", callback_data=f"pay_{MONTHLY_AMOUNT * 3}_3"),
+         InlineKeyboardButton(text=f"💰 Pay {pretty_money(MONTHLY_AMOUNT * 6)} (6 months)", callback_data=f"pay_{MONTHLY_AMOUNT * 6}_6")],
         [InlineKeyboardButton(text="💳 Custom Amount", callback_data="pay_custom")],
-        [InlineKeyboardButton(text="🏠 Main Menu", callback_data="main_menu")],
-        [InlineKeyboardButton(text="❌ Cancel", callback_data="main_menu")]
+        [InlineKeyboardButton(text="🏠 Main Menu", callback_data="main_menu"),
+         InlineKeyboardButton(text="❌ Cancel", callback_data="main_menu")]
     ]
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
@@ -127,26 +127,26 @@ def create_admin_settings_menu() -> InlineKeyboardMarkup:
 def create_user_management_menu() -> InlineKeyboardMarkup:
     """Create user management menu"""
     buttons = [
-        [InlineKeyboardButton(text="👤 Add Member", callback_data="add_member")],
-        [InlineKeyboardButton(text="🔇 Mute User", callback_data="mute_user")],
+        [InlineKeyboardButton(text="👤 Add Member", callback_data="add_member"),
+         InlineKeyboardButton(text="👥 List All Users", callback_data="list_users")],
+        [InlineKeyboardButton(text="🔇 Mute User", callback_data="mute_user"),
+         InlineKeyboardButton(text="🔍 Get Proof", callback_data="get_proof")],
         [InlineKeyboardButton(text="🗑️ Remove User", callback_data="remove_user")],
-        [InlineKeyboardButton(text="🔍 Get Proof", callback_data="get_proof")],
-        [InlineKeyboardButton(text="👥 List All Users", callback_data="list_users")],
-        [InlineKeyboardButton(text="🔙 Back to Admin", callback_data="admin_menu")],
-        [InlineKeyboardButton(text="❌ Cancel", callback_data="main_menu")]
+        [InlineKeyboardButton(text="🔙 Back to Admin", callback_data="admin_menu"),
+         InlineKeyboardButton(text="❌ Cancel", callback_data="main_menu")]
     ]
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 def create_admin_quick_actions_menu() -> InlineKeyboardMarkup:
     """Create admin quick actions menu"""
     buttons = [
+        [InlineKeyboardButton(text="📊 Full System Status", callback_data="system_status"),
+         InlineKeyboardButton(text="🗂️ Recent Payments (10)", callback_data="recent_payments")],
+        [InlineKeyboardButton(text="⚠️ Overdue Users", callback_data="overdue_users"),
+         InlineKeyboardButton(text="🔄 Refresh All Data", callback_data="refresh_data")],
         [InlineKeyboardButton(text="🚨 Send Reminders Now", callback_data="send_reminders")],
-        [InlineKeyboardButton(text="📊 Full System Status", callback_data="system_status")],
-        [InlineKeyboardButton(text="🗂️ Recent Payments (10)", callback_data="recent_payments")],
-        [InlineKeyboardButton(text="⚠️ Overdue Users", callback_data="overdue_users")],
-        [InlineKeyboardButton(text="🔄 Refresh All Data", callback_data="refresh_data")],
-        [InlineKeyboardButton(text="🔙 Back to Admin", callback_data="admin_menu")],
-        [InlineKeyboardButton(text="❌ Cancel", callback_data="main_menu")]
+        [InlineKeyboardButton(text="🔙 Back to Admin", callback_data="admin_menu"),
+         InlineKeyboardButton(text="❌ Cancel", callback_data="main_menu")]
     ]
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
@@ -550,78 +550,111 @@ async def callback_pay_menu(callback: CallbackQuery):
 
 @dp.callback_query(F.data.startswith("pay_"))
 async def callback_pay_amount(callback: CallbackQuery):
-    data = callback.data
-    if data == "pay_custom":
-        text = (
-            "💳 *Custom Payment* 💳\n\n"
-            "Please use the command format:\n"
-            "`/pay <amount> <months>`\n\n"
-            "Examples:\n"
-            f"• `/pay {pretty_money(MONTHLY_AMOUNT)} 1` - one month\n"
-            f"• `/pay {pretty_money(MONTHLY_AMOUNT * 2)} 2` - two months\n"
-            "• `/pay 10.50 4` - custom amount for 4 months"
-        )
-        await callback.message.edit_text(text, parse_mode="Markdown", reply_markup=create_payment_menu())
-    else:
-        # Extract amount and months from callback data like "pay_2.50_1"
-        parts = data.split("_")
-        if len(parts) == 3:
-            amount = float(parts[1])
-            months = int(parts[2])
-            user_id = callback.from_user.id
-            
-            # Set pending payment
-            await db.set_pending(user_id, amount, months)
-            
+    try:
+        data = callback.data
+        if data == "pay_custom":
             text = (
-                "✅ *Payment Started* ✅\n\n"
-                f"Amount: *{pretty_money(amount)}*\n"
-                f"Months: *{months}*\n\n"
-                "📎 Now please upload your payment proof (photo or document) in your next message."
+                "💳 *Custom Payment* 💳\n\n"
+                "Please use the command format:\n"
+                "`/pay <amount> <months>`\n\n"
+                "Examples:\n"
+                f"• `/pay {pretty_money(MONTHLY_AMOUNT)} 1` - one month\n"
+                f"• `/pay {pretty_money(MONTHLY_AMOUNT * 2)} 2` - two months\n"
+                "• `/pay 10.50 4` - custom amount for 4 months"
             )
-            
-            # Add helpful buttons for payment confirmation
-            keyboard = InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="❌ Cancel Payment", callback_data="cancel_payment")],
-                [InlineKeyboardButton(text="🏠 Main Menu", callback_data="main_menu")]
-            ])
-            
-            await callback.message.edit_text(text, parse_mode="Markdown", reply_markup=keyboard)
-    
-    await callback.answer()
+            await callback.message.edit_text(text, parse_mode="Markdown", reply_markup=create_payment_menu())
+        else:
+            # Extract amount and months from callback data like "pay_2.50_1"
+            parts = data.split("_")
+            if len(parts) == 3:
+                try:
+                    amount = float(parts[1])
+                    months = int(parts[2])
+                    user_id = callback.from_user.id
+                    
+                    if amount <= 0 or months <= 0:
+                        await callback.answer("Invalid amount or months", show_alert=True)
+                        return
+                    
+                    # Set pending payment
+                    await db.set_pending(user_id, amount, months)
+                    
+                    text = (
+                        "✅ *Payment Started* ✅\n\n"
+                        f"Amount: *{pretty_money(amount)}*\n"
+                        f"Months: *{months}*\n\n"
+                        "📎 Now please upload your payment proof (photo or document) in your next message."
+                    )
+                    
+                    # Add helpful buttons for payment confirmation
+                    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+                        [InlineKeyboardButton(text="❌ Cancel Payment", callback_data="cancel_payment")],
+                        [InlineKeyboardButton(text="🏠 Main Menu", callback_data="main_menu")]
+                    ])
+                    
+                    await callback.message.edit_text(text, parse_mode="Markdown", reply_markup=keyboard)
+                except ValueError:
+                    await callback.answer("Invalid payment data format", show_alert=True)
+                    await callback.message.edit_text("❌ Error processing payment", 
+                                                    parse_mode="Markdown", reply_markup=create_payment_menu())
+            else:
+                await callback.answer("Invalid callback data", show_alert=True)
+                await callback.message.edit_text("❌ Error processing request", 
+                                                parse_mode="Markdown", reply_markup=create_payment_menu())
+        
+        await callback.answer()
+    except Exception as e:
+        await callback.answer(f"Error: {str(e)}", show_alert=True)
+        # Fallback to payment menu
+        await callback.message.edit_text("❌ An error occurred. Please try again.", 
+                                       parse_mode="Markdown", reply_markup=create_payment_menu())
 
 @dp.callback_query(F.data == "history")
 async def callback_history(callback: CallbackQuery):
-    user_id = callback.from_user.id
-    is_admin_user = is_admin(user_id)
-    payments = await db.list_payments(user_id, limit=20)
-    
-    if not payments:
-        text = (
-            "📊 *Payment History* 📊\n\n"
-            "No payments found yet.\n\n"
-            "💡 Ready to make your first payment?"
-        )
-        keyboard = create_history_menu(is_admin_user)
-    else:
-        lines = ["📊 *Payment History* 📊\n"]
-        total_amount = 0
-        total_months = 0
+    try:
+        user_id = callback.from_user.id
+        is_admin_user = is_admin(user_id)
+        payments = await db.list_payments(user_id, limit=20)
         
-        for p in payments:
-            t = iso_to_date(p["paid_at"])
-            lines.append(f"• {t.isoformat()}: {pretty_money(p['amount'])} for {p['months']} mo")
-            total_amount += p['amount']
-            total_months += p['months']
+        if not payments:
+            text = (
+                "📊 *Payment History* 📊\n\n"
+                "No payments found yet.\n\n"
+                "💡 Ready to make your first payment?"
+            )
+            keyboard = create_history_menu(is_admin_user)
+        else:
+            lines = ["📊 *Payment History* 📊\n"]
+            total_amount = 0
+            total_months = 0
+            
+            for p in payments:
+                try:
+                    t = iso_to_date(p["paid_at"])
+                    lines.append(f"• {t.isoformat()}: {pretty_money(p['amount'])} for {p['months']} mo")
+                    total_amount += p['amount']
+                    total_months += p['months']
+                except Exception as e:
+                    lines.append(f"• Invalid payment record: {p.get('id', 'unknown')}")
+            
+            lines.append(f"\n📋 *Summary:*")
+            lines.append(f"Total paid: *{pretty_money(total_amount)}*")
+            lines.append(f"Total months: *{total_months}*")
+            text = "\n".join(lines)
+            keyboard = create_history_menu(is_admin_user)
         
-        lines.append(f"\n📋 *Summary:*")
-        lines.append(f"Total paid: *{pretty_money(total_amount)}*")
-        lines.append(f"Total months: *{total_months}*")
-        text = "\n".join(lines)
-        keyboard = create_history_menu(is_admin_user)
-    
-    await callback.message.edit_text(text, parse_mode="Markdown", reply_markup=keyboard)
-    await callback.answer()
+        await callback.message.edit_text(text, parse_mode="Markdown", reply_markup=keyboard)
+        await callback.answer()
+    except Exception as e:
+        await callback.answer(f"Error loading history: {str(e)}", show_alert=True)
+        # Fallback to main menu
+        user_id = callback.from_user.id
+        if is_admin(user_id):
+            keyboard = create_admin_menu()
+        else:
+            keyboard = create_main_menu()
+        await callback.message.edit_text("❌ Error loading payment history. Please try again.", 
+                                       parse_mode="Markdown", reply_markup=keyboard)
 
 @dp.callback_query(F.data == "help")
 async def callback_help(callback: CallbackQuery):
@@ -676,44 +709,54 @@ async def callback_status(callback: CallbackQuery):
         await callback.answer("Access denied", show_alert=True)
         return
     
-    users = await db.all_users()
-    if not users:
-        text = "📊 *User Status* 📊\n\nNo users registered yet."
-    else:
-        # Build status similar to cmd_status
-        tz = ZoneInfo(TZNAME)
-        today = datetime.now(tz).date()
-        lines = ["📊 *User Status* 📊\n"]
-        
-        for u in users:
-            payments = await db.list_payments(u["user_id"], limit=1000)
-            if payments:
-                payments_sorted = sorted(payments, key=lambda p: p["paid_at"])
-                from utils import compute_coverage_until
-                last_cov = iso_to_date(payments_sorted[0]["paid_at"])
-                last_cov = last_cov.replace(day=1)
-                for p in payments_sorted:
-                    last_cov = compute_coverage_until(iso_to_date(p["paid_at"]), int(p["months"]), BILLING_DAY)
-                due = next_billing_start(last_cov, BILLING_DAY)
-                status = f"covered through {last_cov.isoformat()}, next due {due.isoformat()}"
-            else:
-                anchor = date(today.year, today.month, 1).replace(day=min(BILLING_DAY, 28))
-                status = f"no payments yet, next due {anchor.isoformat()}"
+    try:
+        users = await db.all_users()
+        if not users:
+            text = "📊 *User Status* 📊\n\nNo users registered yet."
+        else:
+            # Build status similar to cmd_status
+            tz = ZoneInfo(TZNAME)
+            today = datetime.now(tz).date()
+            lines = ["📊 *User Status* 📊\n"]
+            
+            for u in users:
+                try:
+                    payments = await db.list_payments(u["user_id"], limit=1000)
+                    if payments:
+                        payments_sorted = sorted(payments, key=lambda p: p["paid_at"])
+                        from utils import compute_coverage_until
+                        last_cov = iso_to_date(payments_sorted[0]["paid_at"])
+                        last_cov = last_cov.replace(day=1)
+                        for p in payments_sorted:
+                            last_cov = compute_coverage_until(iso_to_date(p["paid_at"]), int(p["months"]), BILLING_DAY)
+                        due = next_billing_start(last_cov, BILLING_DAY)
+                        status = f"covered through {last_cov.isoformat()}, next due {due.isoformat()}"
+                    else:
+                        anchor = date(today.year, today.month, 1).replace(day=min(BILLING_DAY, 28))
+                        status = f"no payments yet, next due {anchor.isoformat()}"
 
-            mute = f", muted until {u['muted_until']}" if u["muted_until"] else ""
-            uname = f"@{u['username']}" if u["username"] else str(u["user_id"])
-            lines.append(f"• {uname}: {status}{mute}")
+                    mute = f", muted until {u['muted_until']}" if u["muted_until"] else ""
+                    uname = f"@{u['username']}" if u["username"] else str(u["user_id"])
+                    lines.append(f"• {uname}: {status}{mute}")
+                except Exception as e:
+                    uname = f"@{u['username']}" if u["username"] else str(u["user_id"])
+                    lines.append(f"• {uname}: Error loading data")
+            
+            text = "\n".join(lines)
         
-        text = "\n".join(lines)
-    
-    # Enhanced admin status buttons
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🔄 Refresh Status", callback_data="status")],
-        [InlineKeyboardButton(text="💾 View All Payments", callback_data="admin_history")],
-        [InlineKeyboardButton(text="🔙 Back to Admin", callback_data="admin_menu")]
-    ])
-    await callback.message.edit_text(text, parse_mode="Markdown", reply_markup=keyboard)
-    await callback.answer()
+        # Enhanced admin status buttons
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="🔄 Refresh Status", callback_data="status")],
+            [InlineKeyboardButton(text="💾 View All Payments", callback_data="admin_history")],
+            [InlineKeyboardButton(text="🔙 Back to Admin", callback_data="admin_menu")]
+        ])
+        await callback.message.edit_text(text, parse_mode="Markdown", reply_markup=keyboard)
+        await callback.answer()
+    except Exception as e:
+        await callback.answer(f"Error loading status: {str(e)}", show_alert=True)
+        keyboard = create_admin_menu()
+        await callback.message.edit_text("❌ Error loading user status. Please try again.", 
+                                       parse_mode="Markdown", reply_markup=keyboard)
 
 @dp.callback_query(F.data == "admin_settings")
 async def callback_admin_settings(callback: CallbackQuery):
@@ -871,33 +914,42 @@ async def callback_admin_history(callback: CallbackQuery):
         await callback.answer("Access denied", show_alert=True)
         return
     
-    payments = await db.list_payments(limit=30)  # Get last 30 payments for admin
-    if not payments:
-        text = "💾 *All Payment History* 💾\n\nNo payments in database."
-        keyboard = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🔙 Back to Admin", callback_data="admin_menu")]])
-    else:
-        lines = ["💾 *All Payment History* 💾\n"]
-        total_amount = 0
+    try:
+        payments = await db.list_payments(limit=30)  # Get last 30 payments for admin
+        if not payments:
+            text = "💾 *All Payment History* 💾\n\nNo payments in database."
+            keyboard = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🔙 Back to Admin", callback_data="admin_menu")]])
+        else:
+            lines = ["💾 *All Payment History* 💾\n"]
+            total_amount = 0
+            
+            for p in payments:
+                try:
+                    t = iso_to_date(p["paid_at"])
+                    user_info = await db.get_user(p["user_id"])
+                    username = f"@{user_info['username']}" if user_info and user_info['username'] else f"ID:{p['user_id']}"
+                    lines.append(f"• {t.isoformat()}: {username} - {pretty_money(p['amount'])} ({p['months']}mo)")
+                    total_amount += p['amount']
+                except Exception as e:
+                    lines.append(f"• Invalid payment record: {p.get('id', 'unknown')}")
+            
+            lines.append(f"\n💰 *Total shown: {pretty_money(total_amount)}*")
+            lines.append(f"📊 *Showing last {len(payments)} payments*")
+            text = "\n".join(lines)
+            
+            buttons = [
+                [InlineKeyboardButton(text="🗑️ Manage Payments", callback_data="manage_payments")],
+                [InlineKeyboardButton(text="🔙 Back to Admin", callback_data="admin_menu")]
+            ]
+            keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
         
-        for p in payments:
-            t = iso_to_date(p["paid_at"])
-            user_info = await db.get_user(p["user_id"])
-            username = f"@{user_info['username']}" if user_info and user_info['username'] else f"ID:{p['user_id']}"
-            lines.append(f"• {t.isoformat()}: {username} - {pretty_money(p['amount'])} ({p['months']}mo)")
-            total_amount += p['amount']
-        
-        lines.append(f"\n💰 *Total shown: {pretty_money(total_amount)}*")
-        lines.append(f"📊 *Showing last {len(payments)} payments*")
-        text = "\n".join(lines)
-        
-        buttons = [
-            [InlineKeyboardButton(text="🗑️ Manage Payments", callback_data="manage_payments")],
-            [InlineKeyboardButton(text="🔙 Back to Admin", callback_data="admin_menu")]
-        ]
-        keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
-    
-    await callback.message.edit_text(text, parse_mode="Markdown", reply_markup=keyboard)
-    await callback.answer()
+        await callback.message.edit_text(text, parse_mode="Markdown", reply_markup=keyboard)
+        await callback.answer()
+    except Exception as e:
+        await callback.answer(f"Error loading admin history: {str(e)}", show_alert=True)
+        keyboard = create_admin_menu()
+        await callback.message.edit_text("❌ Error loading payment history. Please try again.", 
+                                       parse_mode="Markdown", reply_markup=keyboard)
 
 @dp.callback_query(F.data == "manage_payments")
 async def callback_manage_payments(callback: CallbackQuery):
@@ -905,27 +957,37 @@ async def callback_manage_payments(callback: CallbackQuery):
         await callback.answer("Access denied", show_alert=True)
         return
     
-    payments = await db.list_payments(limit=10)  # Show last 10 for management
-    if not payments:
-        text = "🗑️ *Manage Payments* 🗑️\n\nNo payments to manage."
+    try:
+        payments = await db.list_payments(limit=10)  # Show last 10 for management
+        if not payments:
+            text = "🗑️ *Manage Payments* 🗑️\n\nNo payments to manage."
+            keyboard = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🔙 Back", callback_data="admin_history")]])
+        else:
+            lines = ["🗑️ *Manage Payments* 🗑️\n", "Select a payment to delete:"]
+            
+            buttons = []
+            for p in payments:
+                try:
+                    t = iso_to_date(p["paid_at"])
+                    user_info = await db.get_user(p["user_id"])
+                    username = f"@{user_info['username']}" if user_info and user_info['username'] else f"ID:{p['user_id']}"
+                    button_text = f"❌ {t.strftime('%m/%d')} {username} {pretty_money(p['amount'])}"
+                    buttons.append([InlineKeyboardButton(text=button_text, callback_data=f"delete_payment_{p['id']}")])
+                except Exception as e:
+                    # Skip invalid payments
+                    continue
+            
+            buttons.append([InlineKeyboardButton(text="🔙 Back", callback_data="admin_history")])
+            text = "\n".join(lines)
+            keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
+        
+        await callback.message.edit_text(text, parse_mode="Markdown", reply_markup=keyboard)
+        await callback.answer()
+    except Exception as e:
+        await callback.answer(f"Error loading payments: {str(e)}", show_alert=True)
         keyboard = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🔙 Back", callback_data="admin_history")]])
-    else:
-        lines = ["🗑️ *Manage Payments* 🗑️\n", "Select a payment to delete:"]
-        
-        buttons = []
-        for p in payments:
-            t = iso_to_date(p["paid_at"])
-            user_info = await db.get_user(p["user_id"])
-            username = f"@{user_info['username']}" if user_info and user_info['username'] else f"ID:{p['user_id']}"
-            button_text = f"❌ {t.strftime('%m/%d')} {username} {pretty_money(p['amount'])}"
-            buttons.append([InlineKeyboardButton(text=button_text, callback_data=f"delete_payment_{p['id']}")])
-        
-        buttons.append([InlineKeyboardButton(text="🔙 Back", callback_data="admin_history")])
-        text = "\n".join(lines)
-        keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
-    
-    await callback.message.edit_text(text, parse_mode="Markdown", reply_markup=keyboard)
-    await callback.answer()
+        await callback.message.edit_text("❌ Error loading payment management. Please try again.", 
+                                       parse_mode="Markdown", reply_markup=keyboard)
 
 @dp.callback_query(F.data.startswith("delete_payment_"))
 async def callback_delete_payment(callback: CallbackQuery):
@@ -985,35 +1047,75 @@ async def callback_confirm_delete_payment(callback: CallbackQuery):
 @dp.callback_query(F.data == "refresh_user_status")
 async def callback_refresh_user_status(callback: CallbackQuery):
     user_id = callback.from_user.id
-    await ensure_member(callback.message)
-    
-    # Show user's current status
-    payments = await db.list_payments(user_id, limit=5)
-    text_lines = ["🔄 *Your Current Status* 🔄\n"]
-    
-    if payments:
-        latest_payment = payments[0]
-        t = iso_to_date(latest_payment["paid_at"])
-        text_lines.append(f"💳 Last payment: {pretty_money(latest_payment['amount'])} on {t.isoformat()}")
-        text_lines.append(f"📝 For {latest_payment['months']} months")
+    try:
+        # Ensure user is in database
+        await db.upsert_user(callback.from_user.id, 
+                            callback.from_user.username or "", 
+                            callback.from_user.first_name or "", 
+                            callback.from_user.last_name or "")
         
-        total_paid = sum(p['amount'] for p in payments)
-        total_months = sum(p['months'] for p in payments)
-        text_lines.append(f"\n📊 Recent totals:")
-        text_lines.append(f"💰 Total: {pretty_money(total_paid)} ({total_months} months)")
-    else:
-        text_lines.append("❌ No payments recorded yet")
-        text_lines.append("💡 Consider making your first payment!")
-    
-    text_lines.append(f"\n⚙️ System info:")
-    text_lines.append(f"💰 Monthly amount: {pretty_money(MONTHLY_AMOUNT)}")
-    text_lines.append(f"📅 Billing day: {BILLING_DAY}")
-    
-    text = "\n".join(text_lines)
-    keyboard = create_main_menu()
-    
-    await callback.message.edit_text(text, parse_mode="Markdown", reply_markup=keyboard)
-    await callback.answer("Status refreshed!")
+        # Show user's current status
+        payments = await db.list_payments(user_id, limit=5)
+        text_lines = ["🔄 *Your Current Status* 🔄\n"]
+        
+        if payments:
+            latest_payment = payments[0]
+            t = iso_to_date(latest_payment["paid_at"])
+            text_lines.append(f"💳 Last payment: {pretty_money(latest_payment['amount'])} on {t.isoformat()}")
+            text_lines.append(f"📝 For {latest_payment['months']} months")
+            
+            # Calculate coverage status
+            from utils import compute_coverage_until, next_billing_start
+            from datetime import date
+            
+            today = date.today()
+            last_coverage = compute_coverage_until(t, int(latest_payment["months"]), BILLING_DAY)
+            due_date = next_billing_start(last_coverage, BILLING_DAY)
+            days_until_due = (due_date - today).days
+            
+            if days_until_due > 0:
+                text_lines.append(f"✅ Covered until: {last_coverage.isoformat()}")
+                text_lines.append(f"📅 Next due: {due_date.isoformat()} ({days_until_due} days)")
+            else:
+                text_lines.append(f"⚠️ Overdue since: {due_date.isoformat()}")
+            
+            total_paid = sum(p['amount'] for p in payments[-5:])  # Last 5 payments
+            total_months = sum(p['months'] for p in payments[-5:])
+            text_lines.append(f"\n📊 Recent totals (last 5):")
+            text_lines.append(f"💰 Total: {pretty_money(total_paid)} ({total_months} months)")
+        else:
+            text_lines.append("❌ No payments recorded yet")
+            text_lines.append("💡 Consider making your first payment!")
+        
+        text_lines.append(f"\n⚙️ System info:")
+        text_lines.append(f"💰 Monthly amount: {pretty_money(MONTHLY_AMOUNT)}")
+        text_lines.append(f"📅 Billing day: {BILLING_DAY}")
+        
+        text = "\n".join(text_lines)
+        
+        # Create appropriate keyboard based on user type
+        if is_admin(user_id):
+            keyboard = InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="💳 Make Payment", callback_data="pay_menu")],
+                [InlineKeyboardButton(text="📊 View History", callback_data="history")],
+                [InlineKeyboardButton(text="🔧 Admin Panel", callback_data="admin_menu")],
+                [InlineKeyboardButton(text="🏠 Main Menu", callback_data="main_menu")]
+            ])
+        else:
+            keyboard = create_main_menu()
+        
+        await callback.message.edit_text(text, parse_mode="Markdown", reply_markup=keyboard)
+        await callback.answer("Status refreshed!")
+        
+    except Exception as e:
+        await callback.answer(f"Error refreshing status: {str(e)}", show_alert=True)
+        # Fallback to main menu
+        if is_admin(user_id):
+            keyboard = create_admin_menu()
+        else:
+            keyboard = create_main_menu()
+        await callback.message.edit_text("❌ Error refreshing status. Please try again.", 
+                                       parse_mode="Markdown", reply_markup=keyboard)
 
 @dp.callback_query(F.data == "list_users")
 async def callback_list_users(callback: CallbackQuery):
