@@ -8,7 +8,7 @@ from dateutil.relativedelta import relativedelta
 
 from aiogram import Bot, Dispatcher, F, types
 from aiogram.filters import Command, CommandObject
-from aiogram.types import Message, FSInputFile, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
+from aiogram.types import Message, FSInputFile, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, ReplyKeyboardMarkup, KeyboardButton
 from aiogram.utils.markdown import hbold, hcode
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
@@ -131,6 +131,23 @@ def create_history_menu(is_admin: bool = False) -> InlineKeyboardMarkup:
         buttons.append([InlineKeyboardButton(text="🏠 Main Menu", callback_data="main_menu")])
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
+def create_user_reply_keyboard() -> ReplyKeyboardMarkup:
+    """Create persistent reply keyboard for regular users"""
+    buttons = [
+        [KeyboardButton(text="💳 Pay"), KeyboardButton(text="📊 History")],
+        [KeyboardButton(text="❓ Help"), KeyboardButton(text="🔄 Status")]
+    ]
+    return ReplyKeyboardMarkup(keyboard=buttons, resize_keyboard=True, persistent=True)
+
+def create_admin_reply_keyboard() -> ReplyKeyboardMarkup:
+    """Create persistent reply keyboard for administrators"""
+    buttons = [
+        [KeyboardButton(text="🔧 Admin"), KeyboardButton(text="📊 Status")],
+        [KeyboardButton(text="👥 Users"), KeyboardButton(text="⚡ Quick")],
+        [KeyboardButton(text="💾 Export"), KeyboardButton(text="❓ Help")]
+    ]
+    return ReplyKeyboardMarkup(keyboard=buttons, resize_keyboard=True, persistent=True)
+
 # ---------- Commands ----------
 @dp.message(Command("start"))
 async def cmd_start(msg: Message):
@@ -143,20 +160,26 @@ async def cmd_start(msg: Message):
             "👋 Hello Admin! You have full access to manage the subscription system.\n\n"
             f"💰 Current monthly share: *{pretty_money(MONTHLY_AMOUNT)}*\n"
             f"📅 Billing day: *{BILLING_DAY}* of each month\n\n"
-            "🔧 Choose an option below to get started:"
+            "🔧 Choose an option below to get started:\n\n"
+            "💡 *Quick Access:* Use the bottom panel buttons for instant access to key functions!"
         )
-        keyboard = create_admin_menu()
+        inline_keyboard = create_admin_menu()
+        reply_keyboard = create_admin_reply_keyboard()
     else:
         text = (
             "🎵 *Welcome to the Subscription Manager Bot!* 🎵\n\n"
             "👋 Hello! This bot helps you manage your Apple Music subscription payments.\n\n"
             f"💰 Your monthly share: *{pretty_money(MONTHLY_AMOUNT)}*\n"
             f"📅 Billing day: *{BILLING_DAY}* of each month\n\n"
-            "📱 Choose an option below to get started:"
+            "📱 Choose an option below to get started:\n\n"
+            "💡 *Quick Access:* Use the bottom panel buttons for instant access to key functions!"
         )
-        keyboard = create_main_menu()
+        inline_keyboard = create_main_menu()
+        reply_keyboard = create_user_reply_keyboard()
     
-    await msg.answer(text, parse_mode="Markdown", reply_markup=keyboard)
+    # Send message with both inline and reply keyboards
+    await msg.answer(text, parse_mode="Markdown", reply_markup=reply_keyboard)
+    await msg.answer("Choose from the options above or use the quick buttons below:", reply_markup=inline_keyboard)
 
 @dp.message(Command("help"))
 async def cmd_help(msg: Message):
@@ -314,6 +337,201 @@ async def cmd_history(msg: Message):
     ])
     
     await msg.answer(text, parse_mode="Markdown", reply_markup=keyboard)
+
+# ---------- Reply Keyboard Button Handlers ----------
+@dp.message(F.text == "💳 Pay")
+async def handle_pay_button(msg: Message):
+    """Handle Pay button from reply keyboard"""
+    await ensure_member(msg)
+    text = (
+        "💳 *Make a Payment* 💳\n\n"
+        "Choose a quick payment option or enter a custom amount:"
+    )
+    await msg.answer(text, parse_mode="Markdown", reply_markup=create_payment_menu())
+
+@dp.message(F.text == "📊 History")
+async def handle_history_button(msg: Message):
+    """Handle History button from reply keyboard"""
+    await ensure_member(msg)
+    user_id = msg.from_user.id
+    payments = await db.get_payments_for_user(user_id)
+    
+    if not payments:
+        text = "📊 *Payment History* 📊\n\nNo payments found."
+        keyboard = create_history_menu(is_admin=is_admin(user_id))
+    else:
+        # Show payment history (reuse existing logic)
+        lines = [f"📊 *Payment History* 📊\n\nLast {min(len(payments), 20)} payments:"]
+        total = 0.0
+        for p in payments[-20:]:
+            paid_at = iso_to_date(p["paid_at"])
+            lines.append(f"• {paid_at.strftime('%Y-%m-%d')}: {pretty_money(p['amount'])} ({p['months']}mo)")
+            total += p["amount"]
+        
+        lines.append(f"\n💰 Total shown: {pretty_money(total)}")
+        text = "\n".join(lines)
+        keyboard = create_history_menu(is_admin=is_admin(user_id))
+    
+    await msg.answer(text, parse_mode="Markdown", reply_markup=keyboard)
+
+@dp.message(F.text == "❓ Help")  
+async def handle_help_button(msg: Message):
+    """Handle Help button from reply keyboard"""
+    # Reuse existing help command logic
+    await cmd_help(msg)
+
+@dp.message(F.text == "🔄 Status")
+async def handle_status_button(msg: Message):
+    """Handle Status button from reply keyboard"""
+    await ensure_member(msg)
+    user_id = msg.from_user.id
+    user = await db.get_user(user_id)
+    payments = await db.get_payments_for_user(user_id)
+    
+    from utils import compute_coverage_until
+    from datetime import date
+    
+    today = date.today()
+    
+    if payments:
+        latest_payment = payments[-1]
+        last_coverage = compute_coverage_until(iso_to_date(latest_payment["paid_at"]), 
+                                              int(latest_payment["months"]), BILLING_DAY)
+        due_date = next_billing_start(last_coverage, BILLING_DAY)
+        days_until_due = (due_date - today).days
+        
+        if days_until_due > 0:
+            status_emoji = "✅"
+            status_text = f"You're covered until {last_coverage.strftime('%Y-%m-%d')}"
+            due_text = f"Next payment due: {due_date.strftime('%Y-%m-%d')} ({days_until_due} days)"
+        else:
+            status_emoji = "⚠️" 
+            status_text = f"Payment overdue since {due_date.strftime('%Y-%m-%d')}"
+            due_text = f"Please make a payment as soon as possible"
+    else:
+        status_emoji = "❌"
+        status_text = "No payments recorded"
+        due_text = f"Next payment due: {date(today.year, today.month, BILLING_DAY).strftime('%Y-%m-%d')}"
+    
+    text = (
+        f"🔄 *Your Status* 🔄\n\n"
+        f"{status_emoji} {status_text}\n"
+        f"📅 {due_text}\n\n"
+        f"💰 Monthly amount: {pretty_money(MONTHLY_AMOUNT)}\n"
+        f"📅 Billing day: {BILLING_DAY} of each month"
+    )
+    
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="💳 Make Payment", callback_data="pay_menu")],
+        [InlineKeyboardButton(text="📊 View History", callback_data="history")],
+        [InlineKeyboardButton(text="🏠 Main Menu", callback_data="main_menu")]
+    ])
+    
+    await msg.answer(text, parse_mode="Markdown", reply_markup=keyboard)
+
+@dp.message(F.text == "📊 Status")
+async def handle_admin_status_button(msg: Message):
+    """Handle Status button from admin reply keyboard - shows all users status"""
+    if not is_admin(msg.from_user.id):
+        # For regular users, show their own status
+        await handle_status_button(msg)
+        return
+    
+    # For admins, show all users status (reuse existing status logic)
+    today = date.today()
+    users = await db.get_all_users()
+    
+    lines = [f"📊 *All Users Status* - {today.isoformat()}"]
+    
+    for u in users:
+        payments = await db.get_payments_for_user(u["user_id"])
+        if payments:
+            p = payments[-1]  # most recent
+            from utils import compute_coverage_until
+            last_cov = compute_coverage_until(iso_to_date(p["paid_at"]), int(p["months"]), BILLING_DAY)
+            due = next_billing_start(last_cov, BILLING_DAY)
+            status = f"covered through {last_cov.isoformat()}, next due {due.isoformat()}"
+        else:
+            anchor = date(today.year, today.month, 1).replace(day=min(BILLING_DAY, 28))
+            status = f"no payments yet, next due {anchor.isoformat()}"
+
+        mute = f", muted until {u['muted_until']}" if u["muted_until"] else ""
+        uname = f"@{u['username']}" if u["username"] else str(u["user_id"])
+        lines.append(f"• {uname}: {status}{mute}")
+    
+    text = "\n".join(lines)
+    
+    # Enhanced admin status buttons
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🔄 Refresh Status", callback_data="status")],
+        [InlineKeyboardButton(text="💾 View All Payments", callback_data="admin_history")],
+        [InlineKeyboardButton(text="🔙 Admin Panel", callback_data="admin_menu")]
+    ])
+    
+    await msg.answer(text, parse_mode="Markdown", reply_markup=keyboard)
+
+# Admin reply keyboard handlers
+@dp.message(F.text == "🔧 Admin")
+async def handle_admin_button(msg: Message):
+    """Handle Admin button from reply keyboard"""
+    if not is_admin(msg.from_user.id):
+        await msg.answer("❌ Access denied. Admin only.")
+        return
+    
+    text = (
+        "🔧 *Admin Panel* 🔧\n\n"
+        "Welcome admin! Choose an option below:"
+    )
+    await msg.answer(text, parse_mode="Markdown", reply_markup=create_admin_menu())
+
+@dp.message(F.text == "👥 Users")
+async def handle_users_button(msg: Message):
+    """Handle Users button from reply keyboard"""
+    if not is_admin(msg.from_user.id):
+        await msg.answer("❌ Access denied. Admin only.")
+        return
+    
+    text = (
+        "👥 *User Management* 👥\n\n"
+        "Choose a user management action:"
+    )
+    await msg.answer(text, parse_mode="Markdown", reply_markup=create_user_management_menu())
+
+@dp.message(F.text == "⚡ Quick")
+async def handle_quick_button(msg: Message):
+    """Handle Quick Actions button from reply keyboard"""
+    if not is_admin(msg.from_user.id):
+        await msg.answer("❌ Access denied. Admin only.")
+        return
+    
+    text = (
+        "⚡ *Quick Actions* ⚡\n\n"
+        "Choose a quick action:"
+    )
+    await msg.answer(text, parse_mode="Markdown", reply_markup=create_admin_quick_actions_menu())
+
+@dp.message(F.text == "💾 Export")
+async def handle_export_button(msg: Message):
+    """Handle Export button from reply keyboard"""
+    if not is_admin(msg.from_user.id):
+        await msg.answer("❌ Access denied. Admin only.")
+        return
+    
+    # Implement export functionality directly
+    rows = await db.export_all_payments()
+    if not rows:
+        text = "📥 *Export Data* 📥\n\nNo payments to export."
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🔙 Admin Panel", callback_data="admin_menu")]])
+        await msg.answer(text, parse_mode="Markdown", reply_markup=keyboard)
+    else:
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow(["id","user_id","username","first_name","last_name","amount","months","proof_file_id","paid_at"])
+        writer.writerows(rows)
+        output.seek(0)
+        data = io.BytesIO(output.getvalue().encode("utf-8"))
+        data.name = "payments.csv"
+        await bot.send_document(chat_id=msg.chat.id, document=data, caption="📥 All payments export")
 
 # ---------- Callback Handlers ----------
 @dp.callback_query(F.data == "main_menu")
