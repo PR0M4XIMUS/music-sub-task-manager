@@ -1,124 +1,77 @@
-# database.py
 import aiosqlite
-from contextlib import asynccontextmanager
-from datetime import datetime, timedelta
+from pathlib import Path
 
-DB_PATH = "data/bot.db"
+DB_PATH = Path(__file__).parent / "database.db"
 
-@asynccontextmanager
-async def open_db():
-    """Async context manager for opening/closing the database connection."""
-    db = await aiosqlite.connect(DB_PATH)
-    try:
-        await db.execute("PRAGMA foreign_keys = ON;")
-        yield db
-    finally:
-        await db.close()
 
-# -------------------------
-# User management
-# -------------------------
+async def init_db():
+    """Initialize database with required tables."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY,
+                username TEXT,
+                first_name TEXT,
+                last_name TEXT
+            )
+        """)
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS payments (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER,
+                amount REAL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY(user_id) REFERENCES users(id)
+            )
+        """)
+        await db.commit()
+
+
 async def upsert_user(user_id: int, username: str, first_name: str, last_name: str):
-    async with open_db() as db:
-        await db.execute(
-            """
+    """Insert or update user information."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("""
             INSERT INTO users (id, username, first_name, last_name)
             VALUES (?, ?, ?, ?)
             ON CONFLICT(id) DO UPDATE SET
                 username=excluded.username,
                 first_name=excluded.first_name,
                 last_name=excluded.last_name
-            """,
-            (user_id, username, first_name, last_name),
-        )
+        """, (user_id, username, first_name, last_name))
         await db.commit()
 
+
 async def all_users():
-    async with open_db() as db:
+    """Return all users."""
+    async with aiosqlite.connect(DB_PATH) as db:
         cursor = await db.execute("SELECT id, username, first_name, last_name FROM users")
         rows = await cursor.fetchall()
         return rows
 
-async def get_user(user_id: int):
-    async with open_db() as db:
-        cursor = await db.execute(
-            "SELECT id, username, first_name, last_name FROM users WHERE id=?",
-            (user_id,),
-        )
-        return await cursor.fetchone()
 
-# -------------------------
-# Payments
-# -------------------------
-async def add_payment(user_id: int, amount: float, proof_file: str, months: int = 1):
-    async with open_db() as db:
+async def list_payments(user_id: int = None):
+    """
+    Return all payments or payments for a specific user.
+    """
+    async with aiosqlite.connect(DB_PATH) as db:
+        if user_id:
+            cursor = await db.execute(
+                "SELECT id, user_id, amount, created_at FROM payments WHERE user_id = ? ORDER BY created_at DESC",
+                (user_id,)
+            )
+        else:
+            cursor = await db.execute(
+                "SELECT id, user_id, amount, created_at FROM payments ORDER BY created_at DESC"
+            )
+        rows = await cursor.fetchall()
+        return rows
+
+
+async def add_payment(user_id: int, amount: float):
+    """Insert a payment for a user."""
+    async with aiosqlite.connect(DB_PATH) as db:
         await db.execute(
-            """
-            INSERT INTO payments (user_id, amount, proof_file, months)
-            VALUES (?, ?, ?, ?)
-            """,
-            (user_id, amount, proof_file, months),
+            "INSERT INTO payments (user_id, amount) VALUES (?, ?)",
+            (user_id, amount)
         )
         await db.commit()
-
-async def get_user_payments(user_id: int):
-    async with open_db() as db:
-        cursor = await db.execute(
-            "SELECT amount, proof_file, months, created_at FROM payments WHERE user_id=? ORDER BY created_at DESC",
-            (user_id,),
-        )
-        return await cursor.fetchall()
-
-# -------------------------
-# Reminders / subscription tracking
-# -------------------------
-async def set_silence(user_id: int, until: datetime):
-    async with open_db() as db:
-        await db.execute(
-            """
-            INSERT INTO silence (user_id, until)
-            VALUES (?, ?)
-            ON CONFLICT(user_id) DO UPDATE SET until=excluded.until
-            """,
-            (user_id, until.isoformat()),
-        )
-        await db.commit()
-
-async def get_silence(user_id: int):
-    async with open_db() as db:
-        cursor = await db.execute(
-            "SELECT until FROM silence WHERE user_id=?",
-            (user_id,),
-        )
-        row = await cursor.fetchone()
-        if row:
-            return datetime.fromisoformat(row[0])
-        return None
-
-# -------------------------
-# Payment history
-# -------------------------
-async def user_payment_history(user_id: int, limit: int = 10):
-    async with open_db() as db:
-        cursor = await db.execute(
-            "SELECT amount, proof_file, months, created_at FROM payments WHERE user_id=? ORDER BY created_at DESC LIMIT ?",
-            (user_id, limit),
-        )
-        return await cursor.fetchall()
-
-# -------------------------
-# Utility functions
-# -------------------------
-async def get_due_users(current_date: datetime):
-    """Return users whose subscription is due today."""
-    async with open_db() as db:
-        cursor = await db.execute(
-            """
-            SELECT u.id, u.username
-            FROM users u
-            LEFT JOIN silence s ON u.id = s.user_id
-            WHERE s.until IS NULL OR s.until < ?
-            """,
-            (current_date.isoformat(),),
-        )
-        return await cursor.fetchall()
