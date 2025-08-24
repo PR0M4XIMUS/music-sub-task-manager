@@ -87,7 +87,8 @@ def create_admin_menu() -> InlineKeyboardMarkup:
         [InlineKeyboardButton(text="👥 Manage Users", callback_data="user_management")],
         [InlineKeyboardButton(text="📥 Export Data", callback_data="export")],
         [InlineKeyboardButton(text="💾 Payment History", callback_data="admin_history")],
-        [InlineKeyboardButton(text="⚡ Quick Actions", callback_data="admin_quick_actions")]
+        [InlineKeyboardButton(text="⚡ Quick Actions", callback_data="admin_quick_actions")],
+        [InlineKeyboardButton(text="❌ Cancel", callback_data="main_menu")]
     ]
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
@@ -118,7 +119,8 @@ def create_admin_settings_menu() -> InlineKeyboardMarkup:
     buttons = [
         [InlineKeyboardButton(text="💰 Set Amount", callback_data="set_amount")],
         [InlineKeyboardButton(text="📅 Set Billing Day", callback_data="set_day")],
-        [InlineKeyboardButton(text="🔙 Back to Admin", callback_data="admin_menu")]
+        [InlineKeyboardButton(text="🔙 Back to Admin", callback_data="admin_menu")],
+        [InlineKeyboardButton(text="❌ Cancel", callback_data="main_menu")]
     ]
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
@@ -143,7 +145,8 @@ def create_admin_quick_actions_menu() -> InlineKeyboardMarkup:
         [InlineKeyboardButton(text="🗂️ Recent Payments (10)", callback_data="recent_payments")],
         [InlineKeyboardButton(text="⚠️ Overdue Users", callback_data="overdue_users")],
         [InlineKeyboardButton(text="🔄 Refresh All Data", callback_data="refresh_data")],
-        [InlineKeyboardButton(text="🔙 Back to Admin", callback_data="admin_menu")]
+        [InlineKeyboardButton(text="🔙 Back to Admin", callback_data="admin_menu")],
+        [InlineKeyboardButton(text="❌ Cancel", callback_data="main_menu")]
     ]
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
@@ -154,9 +157,15 @@ def create_history_menu(is_admin: bool = False) -> InlineKeyboardMarkup:
         [InlineKeyboardButton(text="🔄 Refresh History", callback_data="history")]
     ]
     if is_admin:
-        buttons.append([InlineKeyboardButton(text="🔧 Admin Panel", callback_data="admin_menu")])
+        buttons.extend([
+            [InlineKeyboardButton(text="🔧 Admin Panel", callback_data="admin_menu")],
+            [InlineKeyboardButton(text="❌ Cancel", callback_data="main_menu")]
+        ])
     else:
-        buttons.append([InlineKeyboardButton(text="🏠 Main Menu", callback_data="main_menu")])
+        buttons.extend([
+            [InlineKeyboardButton(text="🏠 Main Menu", callback_data="main_menu")],
+            [InlineKeyboardButton(text="❌ Cancel", callback_data="main_menu")]
+        ])
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 def create_user_reply_keyboard() -> ReplyKeyboardMarkup:
@@ -188,7 +197,9 @@ async def cmd_start(msg: Message):
             f"💰 Current monthly share: *{pretty_money(MONTHLY_AMOUNT)}*\n"
             f"📅 Billing day: *{BILLING_DAY}* of each month\n\n"
             "🔧 Choose an option below to get started:\n\n"
-            "💡 *Quick Access:* Use the bottom panel buttons for instant access to key functions!"
+            "💡 **Quick Access:** Use the *📋 MENU* button below for instant access to ALL functions!\n"
+            "🔄 Use the *Status* button to check all users' payment status\n"
+            "❌ Use the *Cancel* button to cancel any pending actions"
         )
         inline_keyboard = create_admin_menu()
         reply_keyboard = create_admin_reply_keyboard()
@@ -199,7 +210,9 @@ async def cmd_start(msg: Message):
             f"💰 Your monthly share: *{pretty_money(MONTHLY_AMOUNT)}*\n"
             f"📅 Billing day: *{BILLING_DAY}* of each month\n\n"
             "📱 Choose an option below to get started:\n\n"
-            "💡 *Quick Access:* Use the bottom panel buttons for instant access to key functions!"
+            "💡 **Quick Access:** Use the *📋 MENU* button below for instant access to ALL functions!\n"
+            "🔄 Use the *Status* button to check your current payment status\n"
+            "❌ Use the *Cancel* button to cancel any pending actions"
         )
         inline_keyboard = create_main_menu()
         reply_keyboard = create_user_reply_keyboard()
