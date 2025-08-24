@@ -658,36 +658,60 @@ async def callback_history(callback: CallbackQuery):
 
 @dp.callback_query(F.data == "help")
 async def callback_help(callback: CallbackQuery):
-    admin_commands = ""
-    if is_admin(callback.from_user.id):
-        admin_commands = (
-            "\n*🔧 Admin Commands:*\n"
-            "• /status — 📊 View who's paid & next due dates\n"
-            "• /setmute <@user|id> <months> — 🔇 Mute reminders\n"
-            "• /setamount <value> — 💰 Set monthly amount\n"
-            "• /setday <1-28> — 📅 Set billing day\n"
-            "• /proof <@user|id> — 🔍 Fetch latest proof\n"
-            "• /addmember <@user|id> — 👤 Add/track a member\n"
-            "• /remove <@user|id> — 🗑️ Remove member & data\n"
-            "• /export — 📥 CSV export of all payments\n"
+    try:
+        admin_commands = ""
+        if is_admin(callback.from_user.id):
+            admin_commands = (
+                "\n*🔧 Admin Commands:*\n"
+                "• /status — 📊 View who's paid & next due dates\n"
+                "• /setmute <@user|id> <months> — 🔇 Mute reminders\n"
+                "• /setamount <value> — 💰 Set monthly amount\n"
+                "• /setday <1-28> — 📅 Set billing day\n"
+                "• /proof <@user|id> — 🔍 Fetch latest proof\n"
+                "• /addmember <@user|id> — 👤 Add/track a member\n"
+                "• /remove <@user|id> — 🗑️ Remove member & data\n"
+                "• /export — 📥 CSV export of all payments\n"
+            )
+        
+        text = (
+            "❓ *Help & Available Commands* ❓\n\n"
+            "*📱 User Commands:*\n"
+            "• /start — 🏠 Register & show main menu\n"
+            "• /pay <amount> <months> — 💳 Begin payment process\n"
+            "• /history — 📊 View your last 20 payments\n"
+            "• /help — ❓ Show this help message\n"
+            + admin_commands +
+            "\n💡 *Tips:*\n"
+            "• Use the buttons below for quick actions\n"
+            "• After /pay, upload your payment proof immediately\n"
+            "• Use the 📋 MENU button for quick access to all functions\n"
+            "• Use the 🔄 Status button to check payment status\n"
+            "• Contact admin if you have any issues\n"
         )
-    
-    text = (
-        "❓ *Help & Available Commands* ❓\n\n"
-        "*📱 User Commands:*\n"
-        "• /start — 🏠 Register & show main menu\n"
-        "• /pay <amount> <months> — 💳 Begin payment process\n"
-        "• /history — 📊 View your last 20 payments\n"
-        "• /help — ❓ Show this help message\n"
-        + admin_commands +
-        "\n💡 *Tips:*\n"
-        "• Use the buttons below for quick actions\n"
-        "• After /pay, upload your payment proof immediately\n"
-        "• Contact admin if you have any issues\n"
-    )
-    
-    await callback.message.edit_text(text, parse_mode="Markdown", reply_markup=create_help_menu())
-    await callback.answer()
+        
+        # Create enhanced help menu with more options
+        if is_admin(callback.from_user.id):
+            keyboard = InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="💳 Make Payment", callback_data="pay_menu"),
+                 InlineKeyboardButton(text="📊 My History", callback_data="history")],
+                [InlineKeyboardButton(text="🔧 Admin Panel", callback_data="admin_menu")],
+                [InlineKeyboardButton(text="🏠 Main Menu", callback_data="main_menu"),
+                 InlineKeyboardButton(text="❌ Cancel", callback_data="main_menu")]
+            ])
+        else:
+            keyboard = create_help_menu()
+        
+        await callback.message.edit_text(text, parse_mode="Markdown", reply_markup=keyboard)
+        await callback.answer()
+    except Exception as e:
+        await callback.answer(f"Error loading help: {str(e)}", show_alert=True)
+        user_id = callback.from_user.id
+        if is_admin(user_id):
+            keyboard = create_admin_menu()
+        else:
+            keyboard = create_main_menu()
+        await callback.message.edit_text("❌ Error loading help. Please try again.", 
+                                       parse_mode="Markdown", reply_markup=keyboard)
 
 # Admin callback handlers
 @dp.callback_query(F.data == "admin_menu")
@@ -995,35 +1019,46 @@ async def callback_delete_payment(callback: CallbackQuery):
         await callback.answer("Access denied", show_alert=True)
         return
     
-    payment_id = int(callback.data.split("_")[2])
-    payment = await db.get_payment(payment_id)
-    
-    if not payment:
-        await callback.answer("Payment not found", show_alert=True)
-        return
-    
-    user_info = await db.get_user(payment["user_id"])
-    username = f"@{user_info['username']}" if user_info and user_info['username'] else f"ID:{payment['user_id']}"
-    t = iso_to_date(payment["paid_at"])
-    
-    text = (
-        "⚠️ *Confirm Payment Deletion* ⚠️\n\n"
-        f"Are you sure you want to delete this payment?\n\n"
-        f"👤 User: {username}\n"
-        f"💰 Amount: {pretty_money(payment['amount'])}\n"
-        f"📅 Date: {t.isoformat()}\n"
-        f"📝 Months: {payment['months']}\n\n"
-        "⚠️ This action cannot be undone!"
-    )
-    
-    buttons = [
-        [InlineKeyboardButton(text="✅ Yes, Delete", callback_data=f"confirm_delete_{payment_id}"),
-         InlineKeyboardButton(text="❌ Cancel", callback_data="manage_payments")]
-    ]
-    keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
-    
-    await callback.message.edit_text(text, parse_mode="Markdown", reply_markup=keyboard)
-    await callback.answer()
+    try:
+        payment_id_str = callback.data.split("_", 2)[2]
+        if not payment_id_str.isdigit():
+            await callback.answer("Invalid payment ID", show_alert=True)
+            return
+            
+        payment_id = int(payment_id_str)
+        payment = await db.get_payment(payment_id)
+        
+        if not payment:
+            await callback.answer("Payment not found", show_alert=True)
+            return
+        
+        user_info = await db.get_user(payment["user_id"])
+        username = f"@{user_info['username']}" if user_info and user_info['username'] else f"ID:{payment['user_id']}"
+        t = iso_to_date(payment["paid_at"])
+        
+        text = (
+            "⚠️ *Confirm Payment Deletion* ⚠️\n\n"
+            f"Are you sure you want to delete this payment?\n\n"
+            f"👤 User: {username}\n"
+            f"💰 Amount: {pretty_money(payment['amount'])}\n"
+            f"📅 Date: {t.isoformat()}\n"
+            f"📝 Months: {payment['months']}\n\n"
+            "⚠️ This action cannot be undone!"
+        )
+        
+        buttons = [
+            [InlineKeyboardButton(text="✅ Yes, Delete", callback_data=f"confirm_delete_{payment_id}"),
+             InlineKeyboardButton(text="❌ Cancel", callback_data="manage_payments")]
+        ]
+        keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
+        
+        await callback.message.edit_text(text, parse_mode="Markdown", reply_markup=keyboard)
+        await callback.answer()
+    except Exception as e:
+        await callback.answer(f"Error processing request: {str(e)}", show_alert=True)
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🔙 Back", callback_data="manage_payments")]])
+        await callback.message.edit_text("❌ Error processing deletion request.", 
+                                       parse_mode="Markdown", reply_markup=keyboard)
 
 @dp.callback_query(F.data.startswith("confirm_delete_"))
 async def callback_confirm_delete_payment(callback: CallbackQuery):
@@ -1031,18 +1066,29 @@ async def callback_confirm_delete_payment(callback: CallbackQuery):
         await callback.answer("Access denied", show_alert=True)
         return
     
-    payment_id = int(callback.data.split("_")[2])
-    success = await db.delete_payment(payment_id)
-    
-    if success:
-        text = "✅ *Payment Deleted* ✅\n\nPayment has been successfully deleted from the database."
-        await callback.answer("Payment deleted successfully", show_alert=True)
-    else:
-        text = "❌ *Error* ❌\n\nPayment could not be deleted (may have already been removed)."
-        await callback.answer("Error deleting payment", show_alert=True)
-    
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🔙 Back to Management", callback_data="manage_payments")]])
-    await callback.message.edit_text(text, parse_mode="Markdown", reply_markup=keyboard)
+    try:
+        payment_id_str = callback.data.split("_", 2)[2]
+        if not payment_id_str.isdigit():
+            await callback.answer("Invalid payment ID", show_alert=True)
+            return
+            
+        payment_id = int(payment_id_str)
+        success = await db.delete_payment(payment_id)
+        
+        if success:
+            text = "✅ *Payment Deleted* ✅\n\nPayment has been successfully deleted from the database."
+            await callback.answer("Payment deleted successfully", show_alert=True)
+        else:
+            text = "❌ *Error* ❌\n\nPayment could not be deleted (may have already been removed)."
+            await callback.answer("Error deleting payment", show_alert=True)
+        
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🔙 Back to Management", callback_data="manage_payments")]])
+        await callback.message.edit_text(text, parse_mode="Markdown", reply_markup=keyboard)
+    except Exception as e:
+        await callback.answer(f"Error deleting payment: {str(e)}", show_alert=True)
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🔙 Back to Management", callback_data="manage_payments")]])
+        await callback.message.edit_text("❌ Error occurred during deletion.", 
+                                       parse_mode="Markdown", reply_markup=keyboard)
 
 @dp.callback_query(F.data == "refresh_user_status")
 async def callback_refresh_user_status(callback: CallbackQuery):
@@ -1144,19 +1190,35 @@ async def callback_list_users(callback: CallbackQuery):
 
 @dp.callback_query(F.data == "cancel_payment")
 async def callback_cancel_payment(callback: CallbackQuery):
-    user_id = callback.from_user.id
-    # Clear any pending payment
-    await db.clear_pending(user_id)
-    
-    text = (
-        "❌ *Payment Cancelled* ❌\n\n"
-        "Your pending payment has been cancelled.\n\n"
-        "💡 You can start a new payment anytime!"
-    )
-    
-    keyboard = create_main_menu()
-    await callback.message.edit_text(text, parse_mode="Markdown", reply_markup=keyboard)
-    await callback.answer("Payment cancelled")
+    try:
+        user_id = callback.from_user.id
+        # Clear any pending payment
+        await db.clear_pending(user_id)
+        
+        text = (
+            "❌ *Payment Cancelled* ❌\n\n"
+            "Your pending payment has been cancelled.\n\n"
+            "💡 You can start a new payment anytime!"
+        )
+        
+        # Show appropriate menu based on user type
+        if is_admin(user_id):
+            keyboard = create_admin_menu()
+        else:
+            keyboard = create_main_menu()
+            
+        await callback.message.edit_text(text, parse_mode="Markdown", reply_markup=keyboard)
+        await callback.answer("Payment cancelled")
+    except Exception as e:
+        await callback.answer(f"Error cancelling payment: {str(e)}", show_alert=True)
+        # Fallback to main menu
+        user_id = callback.from_user.id
+        if is_admin(user_id):
+            keyboard = create_admin_menu()
+        else:
+            keyboard = create_main_menu()
+        await callback.message.edit_text("❌ Error occurred. Returned to main menu.", 
+                                       parse_mode="Markdown", reply_markup=keyboard)
 
 @dp.callback_query(F.data == "recent_payments")
 async def callback_recent_payments(callback: CallbackQuery):
