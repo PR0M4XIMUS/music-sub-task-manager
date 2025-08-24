@@ -951,6 +951,24 @@ async def callback_refresh_data(callback: CallbackQuery):
     await callback.message.edit_text(text, parse_mode="Markdown", reply_markup=keyboard)
     await callback.answer("Data refreshed successfully!")
 
+@dp.callback_query(F.data == "send_reminders")
+async def callback_send_reminders(callback: CallbackQuery):
+    if not is_admin(callback.from_user.id):
+        await callback.answer("Access denied", show_alert=True)
+        return
+    
+    text = (
+        "🚨 *Send Reminders* 🚨\n\n"
+        "This feature will send reminder messages to users who need to make payments.\n\n"
+        "⚠️ This is a placeholder for future implementation.\n"
+        "The reminder system currently runs automatically via the scheduler.\n\n"
+        "💡 To manually remind users, use the user management tools."
+    )
+    
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🔙 Back", callback_data="admin_quick_actions")]])
+    await callback.message.edit_text(text, parse_mode="Markdown", reply_markup=keyboard)
+    await callback.answer("Feature coming soon!")
+
 # ---------- Admin ----------
 @dp.message(Command("status"))
 async def cmd_status(msg: Message):
