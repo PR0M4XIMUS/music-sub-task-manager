@@ -194,6 +194,26 @@ async def remove_user(user_id: int) -> int:
         return 1  # Simple return for now
 
 
+async def delete_payment(payment_id: int) -> bool:
+    """Delete a specific payment by ID. Returns True if deleted, False if not found."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        cursor = await db.execute("DELETE FROM payments WHERE id = ?", (payment_id,))
+        await db.commit()
+        return cursor.rowcount > 0
+
+
+async def get_payment(payment_id: int) -> Optional[Dict[str, Any]]:
+    """Get a specific payment by ID."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        cursor = await db.execute(
+            "SELECT id, user_id, amount, months, proof_file_id, paid_at, created_at FROM payments WHERE id = ?",
+            (payment_id,)
+        )
+        row = await cursor.fetchone()
+        return dict(row) if row else None
+
+
 async def export_all_payments() -> List[tuple]:
     """Export all payment data with user information."""
     async with aiosqlite.connect(DB_PATH) as db:
